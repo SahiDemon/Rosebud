@@ -13,3 +13,4 @@ datasets==2.20.0
 weave==0.50.10
 wandb==0.17.5
 pytest==8.3.2
+griffe==0.20.0

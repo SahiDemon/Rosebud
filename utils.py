@@ -84,7 +84,7 @@ def write_file(filename, dict):
     returns:
     None
     """
-    csvFile = open(filename, 'a')
+    csvFile = open(filename, 'a', encoding='utf-8')
     csvwriter = csv.writer(csvFile)
     # unpack the result to access the "collection name" element
     title = dict['title']

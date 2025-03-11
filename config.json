@@ -1,9 +1,9 @@
 {
-  "RETRIEVER_MODEL_NAME": "gpt-4o-mini",
-  "SUMMARY_MODEL_NAME": "gpt-4o-mini",
+  "RETRIEVER_MODEL_NAME": "gpt-4-0125-preview",
+  "SUMMARY_MODEL_NAME": "gpt-4-0125-preview",
   "EMBEDDING_MODEL_NAME": "text-embedding-3-small",
-  "JUDGE_MODEL_NAME": "gpt-4o-mini",
+  "JUDGE_MODEL_NAME": "gpt-4-0125-preview",
   "top_k": 5,
-  "years": [1950, 2023],
+  "years": [2022],
   "TEMPERATURE": 0.5
 }

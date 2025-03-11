@@ -22,27 +22,29 @@ from dotenv import load_dotenv
 import os
 from typing import Optional
 from typing import Dict
+import logging
 
 # Weave
 import weave
-from weave import Model
 
 
-class rosebud_chat_model(Model):
-    RETRIEVER_MODEL_NAME: str = None
-    SUMMARY_MODEL_NAME: str = None
-    EMBEDDING_MODEL_NAME: str = None
-    constructor_prompt: Optional[ChatPromptTemplate] = None
-    vectorstore: Optional[PineconeVectorStore] = None
-    retriever: Optional[SelfQueryRetriever] = None
-    rag_chain_with_source: Optional[RunnableParallel] = None
-    query_constructor: RunnableSerializable[Dict, StructuredQuery] = None
-    context: str = None
-    top_k: int = None
-
+# Changed from inheritance to regular class to fix infinite recursion
+class rosebud_chat_model:
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        # Removed super().__init__(**kwargs) call
         load_dotenv()
+        self.RETRIEVER_MODEL_NAME = None
+        self.SUMMARY_MODEL_NAME = None
+        self.EMBEDDING_MODEL_NAME = None
+        self.constructor_prompt = None
+        self.vectorstore = None
+        self.retriever = None
+        self.rag_chain_with_source = None
+        self.query_constructor = None
+        self.context = None
+        self.top_k = None
+        self.dev_mode = kwargs.get('dev_mode', False)
+        
         with open('./config.json') as f:
             config = json.load(f)
             self.RETRIEVER_MODEL_NAME = config["RETRIEVER_MODEL_NAME"]
@@ -50,9 +52,17 @@ class rosebud_chat_model(Model):
             self.EMBEDDING_MODEL_NAME = config["EMBEDDING_MODEL_NAME"]
             self.top_k = config["top_k"]
         self.initialize_query_constructor()
-        self.initialize_vector_store()
-        self.initialize_retriever()
-        self.initialize_chat_model(config)
+        
+        try:
+            self.initialize_vector_store()
+            self.initialize_retriever()
+            self.initialize_chat_model(config)
+        except Exception as e:
+            logging.error(f"Error initializing vector store or retriever: {str(e)}")
+            if not self.dev_mode:
+                raise Exception(f"Failed to initialize Pinecone vector store. Please check your API key and environment variables: {str(e)}")
+            else:
+                print(f"Running in dev mode, continuing without vector store: {str(e)}")
 
     def initialize_query_constructor(self):
         document_content_description = "Brief overview of a movie, along with keywords"
@@ -164,28 +174,47 @@ class rosebud_chat_model(Model):
 
     def initialize_vector_store(self):
         # Create empty index
-        PINECONE_KEY, PINECONE_INDEX_NAME = os.getenv(
-            'PINECONE_API_KEY'), os.getenv('PINECONE_INDEX_NAME')
-
-        pc = Pinecone(api_key=PINECONE_KEY)
-
-        # Target index and check status
-        pc_index = pc.Index(PINECONE_INDEX_NAME)
-
-        embeddings = OpenAIEmbeddings(model=self.EMBEDDING_MODEL_NAME)
-
-        namespace = "film_search_prod"
-        self.vectorstore = PineconeVectorStore(
-            index=pc_index,
-            embedding=embeddings,
-            namespace=namespace
-        )
+        PINECONE_KEY = os.getenv('PINECONE_API_KEY')
+        PINECONE_INDEX_NAME = os.getenv('PINECONE_INDEX_NAME')
+        
+        if not PINECONE_KEY or not PINECONE_INDEX_NAME:
+            raise ValueError("Missing Pinecone API key or index name. Please check your .env file.")
+        
+        try:
+            pc = Pinecone(api_key=PINECONE_KEY)
+            
+            # Target index and check status
+            pc_index = pc.Index(PINECONE_INDEX_NAME)
+            
+            embeddings = OpenAIEmbeddings(
+                model=self.EMBEDDING_MODEL_NAME,
+                openai_api_key=os.getenv('OPENAI_API_KEY'),
+                organization=os.getenv('OPENAI_ORGANIZATION')
+            )
+            
+            namespace = "film_search_prod"
+            self.vectorstore = PineconeVectorStore(
+                index=pc_index,
+                embedding=embeddings,
+                namespace=namespace
+            )
+        except Exception as e:
+            logging.error(f"Failed to initialize Pinecone: {str(e)}")
+            raise
 
     def initialize_retriever(self):
+        if not self.vectorstore:
+            if self.dev_mode:
+                # Skip retriever initialization in dev mode if vector store failed
+                return
+            raise ValueError("Vector store not initialized. Cannot create retriever.")
+            
         query_model = ChatOpenAI(
             model=self.RETRIEVER_MODEL_NAME,
             temperature=0,
             streaming=True,
+            openai_api_key=os.getenv('OPENAI_API_KEY'),
+            organization=os.getenv('OPENAI_ORGANIZATION')
         )
 
         output_parser = StructuredQueryOutputParser.from_components()
@@ -199,6 +228,9 @@ class rosebud_chat_model(Model):
         )
 
     def initialize_chat_model(self, config):
+        if not self.retriever and not self.dev_mode:
+            raise ValueError("Retriever not initialized. Cannot create chat model.")
+            
         def format_docs(docs):
             return "\n\n".join(f"{doc.page_content}\n\nMetadata: {doc.metadata}" for doc in docs)
 
@@ -206,7 +238,9 @@ class rosebud_chat_model(Model):
             model=self.SUMMARY_MODEL_NAME,
             temperature=config['TEMPERATURE'],
             streaming=True,
-            max_retries=10
+            max_retries=10,
+            openai_api_key=os.getenv('OPENAI_API_KEY'),
+            organization=os.getenv('OPENAI_ORGANIZATION')
         )
 
         prompt = ChatPromptTemplate.from_messages(
@@ -242,20 +276,36 @@ class rosebud_chat_model(Model):
         )
 
         # Create a chatbot Question & Answer chain from the retriever
-        rag_chain_from_docs = (
-            RunnablePassthrough.assign(
-                context=(lambda x: format_docs(x["context"]))) | prompt | chat_model | StrOutputParser()
-        )
+        if self.retriever:
+            rag_chain_from_docs = (
+                RunnablePassthrough.assign(
+                    context=(lambda x: format_docs(x["context"]))) | prompt | chat_model | StrOutputParser()
+            )
+            
+            self.rag_chain_with_source = RunnableParallel(
+                {"context": self.retriever, "question": RunnablePassthrough(), "query_constructor": self.query_constructor}
+            ).assign(answer=rag_chain_from_docs)
+        elif self.dev_mode:
+            # In dev mode with no retriever, create a simple chat model that explains the situation
+            self.rag_chain_with_source = RunnablePassthrough() | (lambda x: {
+                "answer": "I'm running in development mode without Pinecone. Please check your API keys and configuration.",
+                "context": "",
+                "query_constructor": {}
+            })
 
-        self.rag_chain_with_source = RunnableParallel(
-            {"context": self.retriever, "question": RunnablePassthrough(), "query_constructor": self.query_constructor}
-        ).assign(answer=rag_chain_from_docs)
-
-    # @weave.op()
+    # Modified to work without Weave decorator
     def predict_stream(self, query: str):
-        weave.init('film-search')
-
         try:
+            # Initialize Weave only if needed for tracking
+            try:
+                weave.init('film-search')
+            except Exception as e:
+                logging.warning(f"Could not initialize Weave: {str(e)}")
+            
+            if not self.rag_chain_with_source:
+                yield "Error: Chat model not initialized. Please check API keys and configuration."
+                return
+                
             for chunk in self.rag_chain_with_source.stream(query):
                 if 'answer' in chunk:
                     yield chunk['answer']
@@ -266,17 +316,27 @@ class rosebud_chat_model(Model):
                     self.query_constructor = chunk['query_constructor'].json()
 
         except Exception as e:
-            return {'answer': f"An error occurred: {e}"}
+            yield f"An error occurred: {e}"
 
-    @weave.op()
+    # Modified to work without Weave decorator
     async def predict(self, query: str):
-        weave.init('film-search')
-
         try:
+            # Initialize Weave only if needed for tracking
+            try:
+                weave.init('film-search')
+            except Exception as e:
+                logging.warning(f"Could not initialize Weave: {str(e)}")
+            
+            if not self.rag_chain_with_source:
+                return {
+                    'answer': "Error: Chat model not initialized. Please check API keys and configuration.",
+                    'context': ""
+                }
+                
             result = self.rag_chain_with_source.invoke(query)
             return {
                 'answer': result['answer'],
-                'context': "\n".join(f"{doc.page_content}\n\nMetadata: {doc.metadata}" for doc in result['context'])
+                'context': "\n".join(f"{doc.page_content}\n\nMetadata: {doc.metadata}" for doc in result['context']) if 'context' in result and result['context'] else ""
             }
         except Exception as e:
             return {'answer': f"An error occurred: {e}", 'context': ""}

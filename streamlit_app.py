@@ -5,6 +5,11 @@ import json
 import wandb
 import datetime
 import threading
+import logging
+import os
+
+# Set OpenAI API key
+os.environ["OPENAI_API_KEY"] = "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"
 
 
 st.set_page_config(
@@ -41,19 +46,50 @@ if 'sentiment' not in st.session_state:
     st.session_state.sentiment = None
 if 'feedback_given' not in st.session_state:
     st.session_state.feedback_given = False
+if 'dev_mode' not in st.session_state:
+    st.session_state.dev_mode = False
 
 
 def generate_response(query):
     with st.spinner(text="Generating awesome recommendations..."):
-        chat_model = rosebud_chat_model()
-        with st.chat_message("assistant"):
-            response = st.write_stream(chat_model.predict_stream(query))
-        st.session_state.query = query
-        st.session_state.query_constructor = chat_model.query_constructor
-        st.session_state.context = chat_model.context
-        st.session_state.response = response
-        st.session_state.sentiment = None
-        st.session_state.feedback_given = False
+        try:
+            # Try with normal mode first
+            if st.session_state.dev_mode:
+                chat_model = rosebud_chat_model(dev_mode=True)
+            else:
+                chat_model = rosebud_chat_model()
+                
+            with st.chat_message("assistant"):
+                response = st.write_stream(chat_model.predict_stream(query))
+            
+            st.session_state.query = query
+            st.session_state.query_constructor = chat_model.query_constructor
+            st.session_state.context = chat_model.context
+            st.session_state.response = response
+            st.session_state.sentiment = None
+            st.session_state.feedback_given = False
+            
+        except Exception as e:
+            logging.error(f"Error in normal mode: {str(e)}")
+            if not st.session_state.dev_mode:
+                # If it failed and we're not already in dev mode, switch to dev mode
+                st.session_state.dev_mode = True
+                st.error("Entering development mode due to API key issues. Please check your Pinecone API key in the .env file.")
+                chat_model = rosebud_chat_model(dev_mode=True)
+                
+                with st.chat_message("assistant"):
+                    response = st.write_stream(chat_model.predict_stream(query))
+                
+                st.session_state.query = query
+                st.session_state.query_constructor = {}
+                st.session_state.context = ""
+                st.session_state.response = "Error: Missing or invalid API keys. Please check your .env file configuration."
+                st.session_state.sentiment = None
+                st.session_state.feedback_given = False
+            else:
+                # Already in dev mode and still failing
+                st.error(f"Error: {str(e)}")
+                st.session_state.response = f"Error: {str(e)}"
 
 
 def start_log_feedback(feedback):
@@ -69,18 +105,21 @@ def start_log_feedback(feedback):
 
 
 def log_feedback(sentiment, query, query_constructor, context, response):
-    ct = datetime.datetime.now()
-    wandb.init(project="film-search",
-               name=f"query: {ct}")
-    table = wandb.Table(columns=["sentiment", "query", "query_constructor", "context", "response"])
-    table.add_data(sentiment,
-                   query,
-                   query_constructor,
-                   context,
-                   response
-                   )
-    wandb.log({"Query Log": table})
-    wandb.finish()
+    try:
+        ct = datetime.datetime.now()
+        wandb.init(project="film-search",
+                name=f"query: {ct}")
+        table = wandb.Table(columns=["sentiment", "query", "query_constructor", "context", "response"])
+        table.add_data(sentiment,
+                    query,
+                    query_constructor,
+                    context,
+                    response
+                    )
+        wandb.log({"Query Log": table})
+        wandb.finish()
+    except Exception as e:
+        logging.error(f"Error logging feedback to wandb: {str(e)}")
 
 
 col1, col2, col3 = st.columns(3)
@@ -168,6 +207,16 @@ with st.sidebar:
     """
 
     "To see the code repository for this project, [click here](https://github.com/EdIzaguirre/Rosebud)."
+
+    if st.session_state.dev_mode:
+        st.warning("""
+        **You are running in development mode.**
+        
+        The app is operating without connection to the Pinecone vector store. Please check your .env file and ensure it contains:
+        - PINECONE_API_KEY
+        - PINECONE_INDEX_NAME
+        - OpenAI API key (if required)
+        """)
 
     st.header("FAQ")
 
