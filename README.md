@@ -2,7 +2,16 @@
 
 ### Let's discover films.
 
+## Getting API Keys 🔑
 
+To use Rosebud, you'll need API keys for various services. Follow the steps in [this guide](https://scribehow.com/page/API_Key_Acquisition_Steps_For_Multiple_Services__AGK8btnlRziqnZoUGjvRFA) to acquire the necessary keys for:
+
+- **Pinecone**: For vector storage and retrieval.
+- **OpenAI**: For the language model powering the chat system.
+- **TMDB**: For fetching movie data.
+- **Weights & Biases (W&B)**: For evaluation and observability.
+
+Once you have the keys, add them to your `.env` file as described in the Docker Installation section.
 
 ## Docker Installation 🐳
 
