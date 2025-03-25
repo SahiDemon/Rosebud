@@ -60,6 +60,32 @@ docker build -t rosebud .
 docker run -p 8000:8000 --env-file .env rosebud
 ```
 
+### Docker Troubleshooting
+
+If you encounter issues when running the Docker container:
+
+1. **Docker Desktop not running**: Ensure Docker Desktop is running on your system. On Windows, check the system tray for the Docker icon.
+   ```bash
+   # Verify Docker is running with:
+   docker info
+   ```
+
+2. **Docker Engine connection errors**: If you see errors like "unable to get image" or "error during connect", restart Docker Desktop.
+   
+3. **Environment variables not loading**: Make sure your `.env` file is in the same directory as your `docker-compose.yml` file.
+   ```bash
+   # You can verify environment variables with:
+   docker-compose config
+   ```
+
+4. **Port already in use**: If port 8000 is already in use, change the port mapping in `docker-compose.yml`:
+   ```yaml
+   ports:
+     - "8001:8000"  # Maps host port 8001 to container port 8000
+   ```
+
+5. **Windows path issues**: If using Windows and encountering path-related errors, try using Linux-style paths in Docker volume mappings.
+
 ## Overview of Tools Used 🛠️
 - **LangChain**: Framework to create the `rosebud_chat_model`. Important in the creation of the self-querying retriever as well as connecting the OpenAI Chat model to the Pinecone vector store for retrieval augmented generation (RAG).
 - **Weights and Biases (W&B)/Weave**: Used for evaluation and reproducibility. W&B and Weave two separate tools unified into a single platform for ease of use. Both offline and online evaluations are stored in W&B/Weave. Offline evaluation is performed using RAGAS (see below). Online evaluation is facilitated via the use of 👍 and 👎 buttons attached to the end of each response. See the image below for an example of the observability:

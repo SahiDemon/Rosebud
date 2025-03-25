@@ -1,10 +1,10 @@
-version: '3'
-
+# Docker Compose configuration for Rosebud movie recommendation app
 services:
   rosebud-app:
     build:
       context: .
       dockerfile: Dockerfile
+    image: rosebud-app:latest
     ports:
       - "8000:8000"
     environment:
