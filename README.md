@@ -16,7 +16,7 @@ The easiest way to run Rosebud is using Docker. You can run the entire applicati
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/YourUsername/Rosebud.git
+   git clone https://github.com/SahiDemon/Rosebud.git
    cd Rosebud
    ```
 
