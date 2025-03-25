@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  rosebud-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_INDEX_NAME=${PINECONE_INDEX_NAME}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_ORGANIZATION=${OPENAI_ORGANIZATION}
+      - TMBD_API_KEY=${TMBD_API_KEY}
+      - TMDB_BEARER_TOKEN=${TMDB_BEARER_TOKEN}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
+      - WANDB_API_KEY=${WANDB_API_KEY}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

@@ -2,17 +2,54 @@
 
 ### Let's discover films.
 
-Try out the app here: [link](https://www.rosebudrecs.com/).
 
-Rosebud is a film recommendation Q&A bot: 
 
-- 🎥 Takes in a user's query and returns appropriate film recommendations. 
-- 💬 Goes beyond a basic RAG app. Uses both semantic search across the database as well as metadata filters that are created on the fly using natural language. 
-- 🗄️ Uses a Pinecone vector database of roughly the 100 most popular films each year from 1950-2023. **It will only recommend films from this database**. 
-- 💯 Incorporates both offline and online evaluation.
-- 🙌 Totally open-source and privacy preserving.
-- 📕 For more information, please [see my most recent article in *Towards Data Science*](https://towardsdatascience.com/productionizing-a-rag-app-04c857e0966e).
-You can also read an [earlier article](https://towardsdatascience.com/how-to-build-a-rag-system-with-a-self-querying-retriever-in-langchain-16b4fa23e9ad) featuring a dev-oriented version of this project.
+## Docker Installation 🐳
+
+The easiest way to run Rosebud is using Docker. You can run the entire application with a single command:
+
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) installed on your machine
+- [Docker Compose](https://docs.docker.com/compose/install/) (usually included with Docker Desktop)
+
+### Running with Docker Compose
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/YourUsername/Rosebud.git
+   cd Rosebud
+   ```
+
+2. **Set up your environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit the `.env` file with your API keys for Pinecone, OpenAI, etc.
+
+3. **Start the application:**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Access the application:**
+   Open your browser and navigate to `http://localhost:8000`
+
+5. **Stop the application:**
+   ```bash
+   docker-compose down
+   ```
+
+### Running with Docker directly
+
+If you prefer to use Docker without Docker Compose:
+
+```bash
+# Build the image
+docker build -t rosebud .
+
+# Run the container
+docker run -p 8000:8000 --env-file .env rosebud
+```
 
 ## Overview of Tools Used 🛠️
 - **LangChain**: Framework to create the `rosebud_chat_model`. Important in the creation of the self-querying retriever as well as connecting the OpenAI Chat model to the Pinecone vector store for retrieval augmented generation (RAG).

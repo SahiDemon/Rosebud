@@ -176,6 +176,23 @@ class rosebud_chat_model:
         # Create empty index
         PINECONE_KEY = os.getenv('PINECONE_API_KEY')
         PINECONE_INDEX_NAME = os.getenv('PINECONE_INDEX_NAME')
+        OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+        
+        # Verify we have the correct API key format
+        if OPENAI_API_KEY and not OPENAI_API_KEY.startswith("sk-"):
+            # Try to get the correct key directly from the .env file
+            env_file_path = os.path.join(os.path.dirname(__file__), '.env')
+            try:
+                with open(env_file_path, 'r') as f:
+                    for line in f:
+                        if line.startswith('OPENAI_API_KEY='):
+                            OPENAI_API_KEY = line.split('=', 1)[1].strip()
+                            if OPENAI_API_KEY.startswith("sk-"):
+                                os.environ['OPENAI_API_KEY'] = OPENAI_API_KEY
+                                logging.info("Loaded corrected API key from .env file")
+                            break
+            except Exception as e:
+                logging.error(f"Error reading API key from .env file: {str(e)}")
         
         if not PINECONE_KEY or not PINECONE_INDEX_NAME:
             raise ValueError("Missing Pinecone API key or index name. Please check your .env file.")

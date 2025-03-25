@@ -7,10 +7,35 @@ import datetime
 import threading
 import logging
 import os
+from dotenv import load_dotenv
 
-# Set OpenAI API key
-os.environ["OPENAI_API_KEY"] = "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"
+# Function to read API key directly from .env file
+def read_api_key_from_env_file(env_file_path='./.env'):
+    try:
+        with open(env_file_path, 'r') as f:
+            for line in f:
+                if line.startswith('OPENAI_API_KEY='):
+                    # Extract the key value after the equals sign
+                    api_key = line.split('=', 1)[1].strip()
+                    return api_key
+        return None
+    except Exception as e:
+        print(f"Error reading .env file: {e}")
+        return None
 
+# Load environment variables and set up the API key
+load_dotenv()
+
+# Check if OPENAI_API_KEY is loaded correctly
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key or not api_key.startswith("sk-"):
+    # Try to get the correct key directly from the .env file
+    api_key = read_api_key_from_env_file()
+    if api_key and api_key.startswith("sk-"):
+        os.environ["OPENAI_API_KEY"] = api_key
+        logging.info("Loaded API key from .env file")
+    else:
+        logging.warning("Could not find valid OpenAI API key")
 
 st.set_page_config(
     page_title="Rosebud",
