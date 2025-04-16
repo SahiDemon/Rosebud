@@ -1,10 +1,10 @@
-# Docker Compose configuration for Rosebud movie recommendation app
+# Docker Compose configuration for FindFlix movie recommendation app
 services:
-  rosebud-app:
+  findflix-app:
     build:
       context: .
       dockerfile: Dockerfile
-    image: rosebud-app:latest
+    image: findflix-app:latest
     ports:
       - "8000:8000"
     environment:

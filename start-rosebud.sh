@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Starting Rosebud Film Recommendation App..."
+echo "Starting FindFlix Film Recommendation App..."
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
@@ -34,9 +34,9 @@ if [ $? -ne 0 ]; then
 fi
 
 echo
-echo "Rosebud is now running!"
+echo "FindFlix is now running!"
 echo "Open your browser and go to: http://localhost:8000"
 echo
-echo "To stop Rosebud, run: docker-compose down"
+echo "To stop FindFlix, run: docker-compose down"
 echo
 read -p "Press Enter to continue..."

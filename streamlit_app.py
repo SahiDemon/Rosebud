@@ -38,8 +38,8 @@ if not api_key or not api_key.startswith("sk-"):
         logging.warning("Could not find valid OpenAI API key")
 
 st.set_page_config(
-    page_title="Rosebud",
-    page_icon="🌹",
+    page_title="FindFlix",
+    page_icon="🎬",
 )
 
 
@@ -55,7 +55,7 @@ st.markdown("#")
 with open('./config.json') as f:
     config = json.load(f)
 
-st.html("<h1 style='text-align: center;'>Rosebud 🌹</h1>")
+st.html("<h1 style='text-align: center;'>FindFlix 🎬</h1>")
 st.html("<h2 style='text-align: center;'>Let's discover films.</h2>")
 
 # Initialize session state
@@ -219,6 +219,9 @@ def render_svg(svg, width=200, height=50):
 
 
 with st.sidebar:
+    # Add the FindFlix logo
+    st.markdown("# 🎬 FindFlix")
+    
     st.header("About")
     beginning_year = config["years"][0]
     ending_year = config["years"][-1]

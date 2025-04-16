@@ -1,5 +1,5 @@
 @echo off
-echo Starting Rosebud Film Recommendation App...
+echo Starting FindFlix Film Recommendation App...
 
 REM Check if Docker is running
 docker info > nul 2>&1
@@ -34,9 +34,9 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Rosebud is now running!
+echo FindFlix is now running!
 echo Open your browser and go to: http://localhost:8000
 echo.
-echo To stop Rosebud, run: docker-compose down
+echo To stop FindFlix, run: docker-compose down
 echo.
 pause
