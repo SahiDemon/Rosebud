@@ -29,7 +29,7 @@ import weave
 
 
 # Changed from inheritance to regular class to fix infinite recursion
-class rosebud_chat_model:
+class findflix_chat_model:
     def __init__(self, **kwargs):
         # Removed super().__init__(**kwargs) call
         load_dotenv()

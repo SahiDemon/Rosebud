@@ -3,7 +3,7 @@ import asyncio
 from ragas import evaluate
 from ragas.metrics import AnswerRelevancy, ContextRelevancy, Faithfulness
 from datasets import Dataset
-from rosebud_chat_model import rosebud_chat_model
+from findflix_chat_model import findflix_chat_model
 import os
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
@@ -47,10 +47,16 @@ def evaluate_with_ragas(query, model_output):
     }
 
 
-def run_evaluation():
-    # Initialize chat model
-    model = rosebud_chat_model()
+@weave.op()
+def model_wrapper(query):
+    """Wrap the findflix to adapt to Weave's expected interface."""
+    chat_model = findflix_chat_model()
+    # Use the async predict method and run it using asyncio
+    result = asyncio.run(chat_model.predict(query))
+    return result
 
+
+def run_evaluation():
     # Define evaluation questions
     questions = [
         {"query": "Suggest a good movie based on a book."},  # Adaptations
@@ -75,11 +81,11 @@ def run_evaluation():
         {"query": "I want some fantasy movies featuring dragons that are under 90 minutes long."}  # Multi-criteria
     ]
 
-    # Create Weave Evaluation object
+    # Create Weave Evaluation object with the properly wrapped model
     evaluation = weave.Evaluation(dataset=questions, scorers=[evaluate_with_ragas])
 
-    # Run the evaluation
-    asyncio.run(evaluation.evaluate(model))
+    # Run the evaluation with our wrapped model
+    asyncio.run(evaluation.evaluate(model_wrapper))
 
 
 if __name__ == "__main__":

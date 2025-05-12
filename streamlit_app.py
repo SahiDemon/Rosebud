@@ -1,6 +1,6 @@
 import base64
 import streamlit as st
-from rosebud_chat_model import rosebud_chat_model
+from findflix_chat_model import findflix_chat_model
 import json
 import wandb
 import datetime
@@ -80,9 +80,9 @@ def generate_response(query):
         try:
             # Try with normal mode first
             if st.session_state.dev_mode:
-                chat_model = rosebud_chat_model(dev_mode=True)
+                chat_model = findflix_chat_model(dev_mode=True)
             else:
-                chat_model = rosebud_chat_model()
+                chat_model = findflix_chat_model()
                 
             with st.chat_message("assistant"):
                 response = st.write_stream(chat_model.predict_stream(query))
@@ -100,7 +100,7 @@ def generate_response(query):
                 # If it failed and we're not already in dev mode, switch to dev mode
                 st.session_state.dev_mode = True
                 st.error("Entering development mode due to API key issues. Please check your Pinecone API key in the .env file.")
-                chat_model = rosebud_chat_model(dev_mode=True)
+                chat_model = findflix_chat_model(dev_mode=True)
                 
                 with st.chat_message("assistant"):
                     response = st.write_stream(chat_model.predict_stream(query))
@@ -227,14 +227,11 @@ with st.sidebar:
     ending_year = config["years"][-1]
 
     f"""
-    This film recommendation bot has been given a database of roughly the 100 most popular
-    films from the years {beginning_year}-{ending_year}. **It will only recommend films from this
-    database.** This bot is able to create metadata filters for your recommendations via natural language.
-    For more information, please [see my article](https://towardsdatascience.com/productionizing-a-rag-app-04c857e0966e)
-    in Towards Data Science.
+    This movie recommendation app uses a dataset of films from {beginning_year}-{ending_year}. 
+    and will only suggest movies from that collection. It understands natural language and can
+    filter results based on details like genre, year, or actors.
     """
 
-    "To see the code repository for this project, [click here](https://github.com/EdIzaguirre/Rosebud)."
 
     if st.session_state.dev_mode:
         st.warning("""
@@ -250,46 +247,39 @@ with st.sidebar:
 
     st.markdown(
         """
-        + **How is this different then ChatGPT?**
-        Good question. If you ask ChatGPT for movie recommendtions it will use its memory + occasional web searches to answer your query.
-        While this might work out sometimes, some of the sources it uses on the web are outdated. ChatGPT's memory may also be faulty.
-        This recommendation bot has access to a dedicated database of film data that is updated automatically on a weekly basis. In addition,
-        this bot has the power to filter movies via natural language. As an example, if you ask for "*comedy films made after 1971 that take place
-        on an island*", this bot is smart enought to filter out all films in the database that are not of the 'comedy' genre and that are not made
-        after the year 1971, **before** searching for *'island films'*.
-        + **What model is this application using?**
-        It is currently using `gpt-4o-mini`. There are plans to give the user a choice of models including Claude and Llama.
-        + **Are my queries logged?**
-        By default queries are not logged. If you leave feedback by clicking the 👍 or 👎 buttons, then that query and response will
-        be logged to help improve the application's performance.
-        + **Where do the ratings come from?**
-        The ratings are from the users of The Movie Database. Check out the [website here](https://www.themoviedb.org/?language=en-US).
-        + **What are the attributes that I can filter by?**
-        The attributes are:
+       + How is this better than ChatGPT?
+        ChatGPT gives answers based on what it remembers or finds online, which can sometimes be old or wrong. This bot uses a trusted movie list and can filter results better based on your exact request.
 
-        Actors: e.g. *['Christine Taylor', 'Ben Stiller', ...]*
+        + Are my questions saved?
+        No. Nothing is saved unless you click the 👍 or 👎 feedback buttons. Only then your query and the answer are saved to help make the app better.
 
-        Buy: e.g. *['Apple TV', 'Amazon Video', ...]*
+        + Where do movie ratings come from?
+        Ratings are taken from The Movie Database (TMDB), based on user reviews.
 
-        Directors: e.g. *'Ben Stiller'*
+        + What are the attributes that I can filter by? The attributes are:
+        Actors: e.g. ['Christine Taylor', 'Ben Stiller', ...]
 
-        Genre: e.g. *'Comedy'*
+        Buy: e.g. ['Apple TV', 'Amazon Video', ...]
 
-        Language': e.g. *'English'*
+        Directors: e.g. 'Ben Stiller'
 
-        Production Companies: e.g. *['Paramount Pictures', 'Village Roadshow Pictures', ...]*
+        Genre: e.g. 'Comedy'
 
-        Rating: e.g. *6.2*
+        Language': e.g. 'English'
 
-        Release Year: e.g. *2001*
+        Production Companies: e.g. ['Paramount Pictures', 'Village Roadshow Pictures', ...]
 
-        Rent: e.g. *['Apple TV', 'Amazon Video']*
+        Rating: e.g. 6.2
 
-        Runtime (minutes): e.g. *90*
+        Release Year: e.g. 2001
 
-        Stream: e.g. *['Paramount Plus', ...]*
+        Rent: e.g. ['Apple TV', 'Amazon Video']
 
-        Title: e.g. *'Zoolander'*
+        Runtime (minutes): e.g. 90
+
+        Stream: e.g. ['Paramount Plus', ...]
+
+        Title: e.g. 'Zoolander'
         """
     )
 

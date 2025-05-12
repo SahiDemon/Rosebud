@@ -1,7 +1,7 @@
 import os
 import re
 from dotenv import load_dotenv
-from rosebud_chat_model import rosebud_chat_model
+from findflix_chat_model import findflix_chat_model
 
 # Function to read API key directly from .env file
 def read_api_key_from_env_file(env_file_path='./.env'):
@@ -44,7 +44,7 @@ else:
         print(f"API Key looks good, starting with: {api_key[:10]}...")
 
 # Initialize the chat model after fixing the API key
-chat_model = rosebud_chat_model()
+chat_model = findflix_chat_model()
 query = "Recommend some films similar to star wars movies but not part of the star wars universe"
 
 print("Running query constructor...")
